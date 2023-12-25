@@ -1,6 +1,7 @@
 import json
 
 import click
+from click.shell_completion import CompletionItem
 from termcolor import colored
 
 SAVE_FILE_NAME = "save.json"
@@ -102,6 +103,24 @@ def cli():
     pass
 
 
+class CardNameType(click.ParamType):
+    name = "card"
+
+    def shell_complete(self, ctx, param, incomplete):
+        # Implements shell completion for cities.
+        # Requires a recent version of bash and adding the following to your .bashrc:
+        # $ eval "$(_PANDEMIC_HELPER_COMPLETE=bash_source pandemic_helper)"
+        try:
+            with open("cards.txt") as f:
+                cities = [c.strip() for c in f.readlines() if len(c) > 0]
+        except FileNotFoundError:
+            cities = []
+        return [
+            CompletionItem(name.lower().replace(" ", "_"))
+            for name in cities if name.lower().replace(" ", "_").startswith(incomplete)
+        ]
+
+
 @cli.command("print")
 def _print() -> None:
     decks = Decks.load(STATE_FILE_NAME)
@@ -109,7 +128,7 @@ def _print() -> None:
 
 
 @cli.command("draw_card")
-@click.argument('card')
+@click.argument('card', type=CardNameType())
 def draw_card(card: str) -> None:
     decks = Decks.load(STATE_FILE_NAME)
     card = card.replace("_", " ").strip().lower()
@@ -119,7 +138,7 @@ def draw_card(card: str) -> None:
 
 
 @cli.command("remove_discard")
-@click.argument('card')
+@click.argument('card', type=CardNameType())
 def remove_discard(card: str) -> None:
     decks = Decks.load(STATE_FILE_NAME)
     card = card.replace("_", " ").strip().lower()
@@ -138,7 +157,7 @@ def shuffle() -> None:
 
 @cli.command()
 @click.option("--color", "-c", required=True, help="red|yellow|none")
-@click.argument('card')
+@click.argument('card', type=CardNameType())
 def mark(color: str, card: str) -> None:
     decks = Decks.load(STATE_FILE_NAME)
     card = card.replace("_", " ").strip().lower()
