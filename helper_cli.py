@@ -45,7 +45,8 @@ class Decks:
             self.discard_pile = []
 
     def remove_discard(self, card: str) -> None:
-        self.discard_pile.remove(card)
+        if card in self.discard_pile:
+            self.discard_pile.remove(card)
 
 
 def load_deck(file_name):
@@ -57,7 +58,7 @@ def mainloop(decks: Decks) -> None:
     user_option = ""
     while user_option != "q":
         user_option = input(
-            """\nquit, save, load, print, draw_card, shuffle, remove_card:\n"""
+            """\nquit, save, load, print, draw_card, shuffle, remove_discard:\n"""
         )
         if user_option == "quit" or user_option == "q":
             decks.save(SAVE_FILE_NAME_AUTO)
@@ -102,6 +103,7 @@ def mainloop(decks: Decks) -> None:
             l = user_option.split(" ")
             if len(l) >= 2:
                 for c in l[1:]:
+                    c = c.replace("_", " ").strip().lower()
                     decks.remove_discard(c)
                     decks.save(SAVE_FILE_NAME_AUTO)
                     decks.print()
