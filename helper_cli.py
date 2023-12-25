@@ -10,10 +10,10 @@ STATE_FILE_NAME = "state.json"
 
 class Decks:
     def __init__(
-            self,
-            infection: list[list[str]],
-            discard: list[str],
-            city_to_color: dict[str, str],
+        self,
+        infection: list[list[str]],
+        discard: list[str],
+        city_to_color: dict[str, str],
     ) -> None:
         self.infection_deck: list[list[str]] = infection
         self.discard_pile: list[str] = discard
@@ -117,7 +117,8 @@ class CardNameType(click.ParamType):
             cities = []
         return [
             CompletionItem(name.lower().replace(" ", "_"))
-            for name in cities if name.lower().replace(" ", "_").startswith(incomplete)
+            for name in cities
+            if name.lower().replace(" ", "_").startswith(incomplete)
         ]
 
 
@@ -128,7 +129,7 @@ def _print() -> None:
 
 
 @cli.command("draw_card")
-@click.argument('card', type=CardNameType())
+@click.argument("card", type=CardNameType())
 def draw_card(card: str) -> None:
     decks = Decks.load(STATE_FILE_NAME)
     card = card.replace("_", " ").strip().lower()
@@ -138,7 +139,7 @@ def draw_card(card: str) -> None:
 
 
 @cli.command("remove_discard")
-@click.argument('card', type=CardNameType())
+@click.argument("card", type=CardNameType())
 def remove_discard(card: str) -> None:
     decks = Decks.load(STATE_FILE_NAME)
     card = card.replace("_", " ").strip().lower()
@@ -157,7 +158,7 @@ def shuffle() -> None:
 
 @cli.command()
 @click.option("--color", "-c", required=True, help="red|yellow|none")
-@click.argument('card', type=CardNameType())
+@click.argument("card", type=CardNameType())
 def mark(color: str, card: str) -> None:
     decks = Decks.load(STATE_FILE_NAME)
     card = card.replace("_", " ").strip().lower()
