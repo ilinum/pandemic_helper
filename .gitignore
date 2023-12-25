@@ -1,6 +1,7 @@
 *.pkl
 *.json
 infection_deck.txt
+*.egg-info/
 .venv
 .venv/**
 .idea/
