@@ -100,7 +100,7 @@ def mainloop(decks: Decks) -> None:
                 print("usage: remove_card|rc \d+ card_name")
 
 
-def main():
+def main() -> None:
     start_deck = sorted(load_deck("infection_deck.txt"))
     decks = Decks([start_deck], discard=[])
     decks.print()
