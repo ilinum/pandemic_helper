@@ -1,16 +1,18 @@
 import json
+
+import click
 from termcolor import colored
 
-SAVE_FILE_NAME_AUTO = "auto_save.json"
-SAVE_FILE_NAME_MANUAL = "manual_save.json"
+SAVE_FILE_NAME = "save.json"
+STATE_FILE_NAME = "state.json"
 
 
 class Decks:
     def __init__(
-        self,
-        infection: list[list[str]],
-        discard: list[str],
-        city_to_color: dict[str, str],
+            self,
+            infection: list[list[str]],
+            discard: list[str],
+            city_to_color: dict[str, str],
     ) -> None:
         self.infection_deck: list[list[str]] = infection
         self.discard_pile: list[str] = discard
@@ -18,11 +20,14 @@ class Decks:
 
     @staticmethod
     def load(file_name: str) -> "Decks":
-        with open(file_name, "rb") as file:
-            obj = json.load(file)
+        try:
+            with open(file_name, "rb") as file:
+                obj = json.load(file)
+        except FileNotFoundError:
+            obj = {}
 
         return Decks(
-            obj.get("infection", []),
+            obj.get("infection", [[]]),
             obj.get("discard", []),
             obj.get("city_to_color", {}),
         )
@@ -72,110 +77,95 @@ class Decks:
         if card in self.discard_pile:
             self.discard_pile.remove(card)
 
-    def mark_city(self, city: str, color: str) -> None:
+    def mark_card(self, city: str, color: str) -> None:
         self.city_to_color[city] = color
 
-    def unmark_city(self, city: str) -> None:
+    def unmark_card(self, city: str) -> None:
         del self.city_to_color[city]
 
 
-def load_deck(file_name):
-    with open(file_name, "r") as deck_file:
-        return [line.strip().lower() for line in deck_file.readlines()]
+class AliasedGroup(click.Group):
+    def get_command(self, ctx, cmd_name):
+        shorthands = {
+            "p": "print",
+            "dc": "draw_card",
+            "rd": "remove_discard",
+        }
+        if cmd_name in shorthands:
+            cmd_name = shorthands[cmd_name]
+        return click.Group.get_command(self, ctx, cmd_name)
 
 
-def mainloop(decks: Decks) -> None:
-    user_option = ""
-    while user_option != "q":
-        user_option = input(
-            """\nquit, save, load, print, draw_card, shuffle, remove_discard, mark_red, mark_yellow, unmark:\n"""
-        )
-        if user_option == "quit" or user_option == "q":
-            decks.save(SAVE_FILE_NAME_AUTO)
-            break
-        elif user_option == "save" or user_option == "s":
-            decks.save(SAVE_FILE_NAME_MANUAL)
-        elif user_option.startswith("load") or user_option.startswith("l "):
-            l = user_option.split(" ")
-            if len(l) == 1:
-                decks = Decks.load(SAVE_FILE_NAME_MANUAL)
-                decks.print()
-            elif len(l) == 2:
-                if l[1] == "manual":
-                    decks = Decks.load(SAVE_FILE_NAME_MANUAL)
-                    decks.print()
-                elif l[1] == "auto":
-                    decks = Decks.load(SAVE_FILE_NAME_AUTO)
-                    decks.print()
-                else:
-                    print("usage: load|l [manual|auto]")
-            else:
-                print("usage: load|l manual|auto")
-        elif user_option == "print" or user_option == "p":
-            decks.save(SAVE_FILE_NAME_AUTO)
-            decks.print()
-        elif user_option.startswith("draw_card") or user_option.startswith("dc"):
-            l = user_option.split(" ")
-            if len(l) >= 2:
-                for c in l[1:]:
-                    c = c.replace("_", " ").strip().lower()
-                    decks.draw(c)
-                    decks.save(SAVE_FILE_NAME_AUTO)
-                    decks.print()
-            else:
-                print("usage: draw_card|dc card_name")
-        elif user_option.startswith("shuffle") or user_option.startswith("sh"):
-            if len(decks.discard_pile) > 0:
-                decks.reshuffle_discard()
-                decks.save(SAVE_FILE_NAME_AUTO)
-            decks.print()
-        elif user_option.startswith("remove_discard") or user_option.startswith("rd"):
-            l = user_option.split(" ")
-            if len(l) >= 2:
-                for c in l[1:]:
-                    c = c.replace("_", " ").strip().lower()
-                    decks.remove_discard(c)
-                    decks.save(SAVE_FILE_NAME_AUTO)
-                    decks.print()
-            else:
-                print("usage: remove_discard|rd card_name")
-        elif user_option.startswith("mark_red") or user_option.startswith("mr"):
-            l = user_option.split(" ")
-            if len(l) >= 2:
-                for c in l[1:]:
-                    c = c.replace("_", " ").strip().lower()
-                    decks.mark_city(c, "red")
-                    decks.save(SAVE_FILE_NAME_AUTO)
-                decks.print()
-            else:
-                print("usage: mark_red|mr card_name")
-        elif user_option.startswith("mark_yellow") or user_option.startswith("my"):
-            l = user_option.split(" ")
-            if len(l) >= 2:
-                for c in l[1:]:
-                    c = c.replace("_", " ").strip().lower()
-                    decks.mark_city(c, "yellow")
-                    decks.save(SAVE_FILE_NAME_AUTO)
-                decks.print()
-            else:
-                print("usage: mark_yellow|my card_name")
-        elif user_option.startswith("unmark") or user_option.startswith("um"):
-            l = user_option.split(" ")
-            if len(l) >= 2:
-                for c in l[1:]:
-                    c = c.replace("_", " ").strip().lower()
-                    decks.unmark_city(c)
-                    decks.save(SAVE_FILE_NAME_AUTO)
-                decks.print()
-            else:
-                print("usage: unmark|um card_name")
+@click.command(cls=AliasedGroup)
+def cli():
+    # This is the root command.
+    pass
+
+
+@cli.command("print")
+def _print() -> None:
+    decks = Decks.load(STATE_FILE_NAME)
+    decks.print()
+
+
+@cli.command("draw_card")
+@click.argument('card')
+def draw_card(card: str) -> None:
+    decks = Decks.load(STATE_FILE_NAME)
+    card = card.replace("_", " ").strip().lower()
+    decks.draw(card)
+    decks.save(STATE_FILE_NAME)
+    decks.print()
+
+
+@cli.command("remove_discard")
+@click.argument('card')
+def remove_discard(card: str) -> None:
+    decks = Decks.load(STATE_FILE_NAME)
+    card = card.replace("_", " ").strip().lower()
+    decks.remove_discard(card)
+    decks.save(STATE_FILE_NAME)
+    decks.print()
+
+
+@cli.command()
+def shuffle() -> None:
+    decks = Decks.load(STATE_FILE_NAME)
+    decks.reshuffle_discard()
+    decks.save(STATE_FILE_NAME)
+    decks.print()
+
+
+@cli.command()
+@click.option("--color", "-c", required=True, help="red|yellow|none")
+@click.argument('card')
+def mark(color: str, card: str) -> None:
+    decks = Decks.load(STATE_FILE_NAME)
+    card = card.replace("_", " ").strip().lower()
+    if color.lower() == "none":
+        decks.unmark_card(card)
+    else:
+        decks.mark_card(card, color)
+    decks.save(STATE_FILE_NAME)
+    decks.print()
+
+
+@cli.command()
+def save() -> None:
+    decks = Decks.load(STATE_FILE_NAME)
+    decks.save(SAVE_FILE_NAME)
+    decks.print()
+
+
+@cli.command()
+def load() -> None:
+    decks = Decks.load(SAVE_FILE_NAME)
+    decks.save(STATE_FILE_NAME)
+    decks.print()
 
 
 def main() -> None:
-    start_deck = sorted(load_deck("infection_deck.txt"))
-    decks = Decks([start_deck], discard=[], city_to_color={})
-    decks.print()
-    mainloop(decks)
+    cli()
 
 
 if __name__ == "__main__":
