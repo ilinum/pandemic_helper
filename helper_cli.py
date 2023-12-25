@@ -68,12 +68,10 @@ def mainloop(decks: Decks) -> None:
                         decks.infection_deck[0].remove(c)
                         if not decks.infection_deck[0]:
                             decks.infection_deck.pop(0)
-                        decks.discard_pile.append(c)
-                        decks.discard_pile.sort()
-                        decks.save("auto_save.pkl")
-                        decks.print()
-                    else:
-                        print("card not in infection deck", c)
+                    decks.discard_pile.append(c)
+                    decks.discard_pile.sort()
+                    decks.save("auto_save.pkl")
+                    decks.print()
             else:
                 print("usage: draw_card|dc card_name")
         elif user_option.startswith("shuffle") or user_option.startswith("sh"):
