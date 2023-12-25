@@ -36,6 +36,9 @@ class Decks:
             self.infection_deck.insert(0, list(self.discard_pile))
             self.discard_pile = []
 
+    def remove_discard(self, card: str) -> None:
+        self.discard_pile.remove(card)
+
 
 def load_deck(file_name):
     with open(file_name, "r") as deck_file:
@@ -87,22 +90,15 @@ def mainloop(decks: Decks) -> None:
                 decks.reshuffle_discard()
                 decks.save("auto_save.pkl")
             decks.print()
-        elif user_option.startswith("remove_card") or user_option.startswith("rc"):
+        elif user_option.startswith("remove_discard") or user_option.startswith("rd"):
             l = user_option.split(" ")
-            if len(l) == 3:
-                c = l[2].replace("_", " ").strip().lower()
-                if l[1].isdecimal:
-                    i = int(l[1])
-                    if len(decks.infection_deck) > i:
-                        decks.infection_deck[i].remove(c)
-                        decks.save("auto_save.pkl")
-                        decks.print()
-                    else:
-                        print("that sub-deck doesn't exist")
-                else:
-                    print("NaN index")
+            if len(l) >= 2:
+                for c in l[1:]:
+                    decks.remove_discard(c)
+                    decks.save("auto_save.pkl")
+                    decks.print()
             else:
-                print("usage: remove_card|rc \d+ card_name")
+                print("usage: remove_discard|rd card_name")
 
 
 def main() -> None:
