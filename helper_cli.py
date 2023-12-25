@@ -6,15 +6,15 @@ class Decks:
         self.infection_deck: list[list[str]] = infection
         self.discard_pile: list[str] = discard
 
-    def save(self, file_name):
-        with open(file_name, "wb") as pickle_file:
-            pickle.dump((self.infection_deck, self.discard_pile), pickle_file)
-
     @staticmethod
     def load(file_name):
         with open(file_name, "rb") as pickle_file:
             (infection, discard) = pickle.load(pickle_file)
         return Decks(infection, discard)
+
+    def save(self, file_name):
+        with open(file_name, "wb") as pickle_file:
+            pickle.dump((self.infection_deck, self.discard_pile), pickle_file)
 
     def print(self):
         print("[")
@@ -22,6 +22,19 @@ class Decks:
             print("\t", x)
         print("]")
         print(self.discard_pile)
+
+    def draw(self, card: str) -> None:
+        if card in self.infection_deck[0]:
+            self.infection_deck[0].remove(card)
+            if not self.infection_deck[0]:
+                self.infection_deck.pop(0)
+        self.discard_pile.append(card)
+        self.discard_pile.sort()
+
+    def reshuffle_discard(self) -> None:
+        if len(self.discard_pile) > 0:
+            self.infection_deck.insert(0, list(self.discard_pile))
+            self.discard_pile = []
 
 
 def load_deck(file_name):
@@ -64,22 +77,16 @@ def mainloop(decks: Decks) -> None:
             if len(l) >= 2:
                 for c in l[1:]:
                     c = c.replace("_", " ").strip().lower()
-                    if c in decks.infection_deck[0]:
-                        decks.infection_deck[0].remove(c)
-                        if not decks.infection_deck[0]:
-                            decks.infection_deck.pop(0)
-                    decks.discard_pile.append(c)
-                    decks.discard_pile.sort()
+                    decks.draw(c)
                     decks.save("auto_save.pkl")
                     decks.print()
             else:
                 print("usage: draw_card|dc card_name")
         elif user_option.startswith("shuffle") or user_option.startswith("sh"):
             if len(decks.discard_pile) > 0:
-                decks.infection_deck.insert(0, decks.discard_pile)
-                decks.discard_pile = []
+                decks.reshuffle_discard()
                 decks.save("auto_save.pkl")
-                decks.print()
+            decks.print()
         elif user_option.startswith("remove_card") or user_option.startswith("rc"):
             l = user_option.split(" ")
             if len(l) == 3:
