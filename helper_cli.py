@@ -3,6 +3,7 @@ import json
 SAVE_FILE_NAME_AUTO = "auto_save.json"
 SAVE_FILE_NAME_MANUAL = "manual_save.json"
 
+
 class Decks:
     def __init__(self, infection: list[list[str]], discard: list[str]) -> None:
         self.infection_deck: list[list[str]] = infection
