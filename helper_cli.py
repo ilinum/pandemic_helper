@@ -18,10 +18,7 @@ def load_state(file_name):
 
 def load_deck(file_name):
     with open(file_name, "r") as deck_file:
-        lines = deck_file.readlines()
-        lines = map(str.strip, lines)
-        lines = map(str.lower, lines)
-    return list(lines)
+        return [line.strip().lower() for line in deck_file.readlines()]
 
 
 def print_decks():
@@ -73,9 +70,7 @@ def mainloop():
         elif user_option.startswith("add_card") or user_option.startswith("ac"):
             l = user_option.split(" ")
             if len(l) == 3:
-                c = l[2].replace("_", " ")
-                c = c.strip()
-                c = c.lower()
+                c = l[2].replace("_", " ").strip().lower()
                 if l[1].isdecimal:
                     i = int(l[1])
                     if len(infection_deck) > i:
@@ -97,9 +92,7 @@ def mainloop():
             l = user_option.split(" ")
             if len(l) >= 2:
                 for c in l[1:]:
-                    c = c.replace("_", " ")
-                    c = c.strip()
-                    c = c.lower()
+                    c = c.replace("_", " ").strip().lower()
                     if c in unique_cards:
                         if c in infection_deck[0]:
                             infection_deck[0].remove(c)
@@ -129,9 +122,7 @@ def mainloop():
         elif user_option.startswith("remove_card") or user_option.startswith("rc"):
             l = user_option.split(" ")
             if len(l) == 3:
-                c = l[2].replace("_", " ")
-                c = c.strip()
-                c = c.lower()
+                c = l[2].replace("_", " ").strip().lower()
                 if l[1].isdecimal:
                     i = int(l[1])
                     if len(infection_deck) > i:
