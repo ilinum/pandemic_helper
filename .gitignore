@@ -1,6 +1,6 @@
 *.pkl
 *.json
-*.txt
+infection_deck.txt
 .venv
 .venv/**
 .idea/
