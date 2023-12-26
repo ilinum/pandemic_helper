@@ -46,15 +46,23 @@ class Decks:
             )
 
     def print(self) -> None:
-        print("infection decks (topmost first):\n[")
-        for infections in self.infection_deck:
+        print("Infection decks (topmost first):")
+        for i, deck in enumerate(self.infection_deck):
+            if len(deck) == 0:
+                continue
+            card_counts = {}
+            for card in deck:
+                card_counts[card] = card_counts.get(card, 0) + 1
+            # Sort by count, then name.
+            card_tuples = [(v, k) for k, v in card_counts.items()]
+            card_tuples.sort()
             reprs = []
-            for card in infections:
-                reprs.append(self._format_name(card))
-            print(f"\t[{', '.join(reprs)}]")
-        print("]\n")
+            for count, card in card_tuples:
+                name = self._format_name(card) + f" x{count}"
+                reprs.append(name)
+            print(f"{i+1}: {', '.join(reprs)}")
         discards = [self._format_name(card) for card in self.discard_pile]
-        print(f"discard: [{', '.join(discards)}]")
+        print(f"\nDiscard: [{', '.join(discards)}]")
 
     def _format_name(self, card: str) -> str:
         if card in self.card_to_color:
