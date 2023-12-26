@@ -13,11 +13,11 @@ class Decks:
         self,
         infection: list[list[str]],
         discard: list[str],
-        city_to_color: dict[str, str],
+        card_to_color: dict[str, str],
     ) -> None:
         self.infection_deck: list[list[str]] = infection
         self.discard_pile: list[str] = discard
-        self.city_to_color: dict[str, str] = city_to_color
+        self.card_to_color: dict[str, str] = card_to_color
 
     @staticmethod
     def load(file_name: str) -> "Decks":
@@ -30,7 +30,7 @@ class Decks:
         return Decks(
             obj.get("infection", [[]]),
             obj.get("discard", []),
-            obj.get("city_to_color", {}),
+            obj.get("card_to_color", {}),
         )
 
     def save(self, file_name: str) -> None:
@@ -39,7 +39,7 @@ class Decks:
                 {
                     "infection": self.infection_deck,
                     "discard": self.discard_pile,
-                    "city_to_color": self.city_to_color,
+                    "card_to_color": self.card_to_color,
                 },
                 file,
                 indent=4,
@@ -49,17 +49,17 @@ class Decks:
         print("infection decks (topmost first):\n[")
         for infections in self.infection_deck:
             reprs = []
-            for city in infections:
-                reprs.append(self._format_city(city))
+            for card in infections:
+                reprs.append(self._format_name(card))
             print(f"\t[{', '.join(reprs)}]")
         print("]\n")
-        discards = [self._format_city(city) for city in self.discard_pile]
+        discards = [self._format_name(card) for card in self.discard_pile]
         print(f"discard: [{', '.join(discards)}]")
 
-    def _format_city(self, city: str) -> str:
-        if city in self.city_to_color:
-            return colored(city, self.city_to_color[city])
-        return city
+    def _format_name(self, card: str) -> str:
+        if card in self.card_to_color:
+            return colored(card, self.card_to_color[card])
+        return card
 
     def draw(self, card: str) -> None:
         if card in self.infection_deck[0]:
@@ -78,11 +78,11 @@ class Decks:
         if card in self.discard_pile:
             self.discard_pile.remove(card)
 
-    def mark_card(self, city: str, color: str) -> None:
-        self.city_to_color[city] = color
+    def mark_card(self, card: str, color: str) -> None:
+        self.card_to_color[card] = color
 
-    def unmark_card(self, city: str) -> None:
-        del self.city_to_color[city]
+    def unmark_card(self, card: str) -> None:
+        del self.card_to_color[card]
 
 
 class AliasedGroup(click.Group):
