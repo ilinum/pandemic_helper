@@ -66,7 +66,7 @@ class Decks:
 
     def _format_name(self, card: str) -> str:
         if card in self.card_to_color:
-            return colored(card, self.card_to_color[card])
+            return colored(card, on_color=f"on_{self.card_to_color[card]}")
         return card
 
     def draw(self, card: str) -> None:
