@@ -1,139 +1,233 @@
-import pickle
+import json
 
-infection_deck: [[str]] = []
-discard_pile: [str] = []
-unique_cards: {str} = set()
+import click
+from click.shell_completion import CompletionItem
+from termcolor import colored
+from functools import cmp_to_key
 
-def save_state(state, file_name):
-    with open(file_name, 'wb') as pickle_file:
-        pickle.dump(state, pickle_file)
-
-def load_state(file_name):
-    with open(file_name, 'rb') as pickle_file:
-        res = pickle.load(pickle_file)
-    return res
+SAVE_FILE_NAME = "save.json"
+STATE_FILE_NAME = "state.json"
 
 
-def load_deck(file_name):
-    with open(file_name, 'r') as deck_file:
-        lines = deck_file.readlines()
-        lines = map(str.strip, lines)
-        lines = map(str.lower, lines)
-    return list(lines)
+class Decks:
+    def __init__(
+        self,
+        infection: list[list[str]],
+        discard: list[str],
+        card_to_color: dict[str, str],
+    ) -> None:
+        self.infection_deck: list[list[str]] = infection
+        self.discard_pile: list[str] = discard
+        self.card_to_color: dict[str, str] = card_to_color
 
-def print_decks():
-    global infection_deck, discard_pile
-    print('[')
-    for x in infection_deck:
-        print('\t', x)
-    print(']')
-    print(discard_pile)
+    @staticmethod
+    def load(file_name: str) -> "Decks":
+        try:
+            with open(file_name, "rb") as file:
+                obj = json.load(file)
+        except FileNotFoundError:
+            obj = {}
 
+        return Decks(
+            obj.get("infection", [[]]),
+            obj.get("discard", []),
+            obj.get("card_to_color", {}),
+        )
 
-def mainloop():
-    global infection_deck, discard_pile, unique_cards
-    user_option = ""
-    while(user_option != 'q'):
-        user_option = input("""\nquit, save, load, print, add_card, draw_card, shuffle, remove_card:\n""")
-        if (user_option == 'quit' or user_option == 'q'):
-            save_state((infection_deck, discard_pile, unique_cards), "auto_save.pkl")
-            break
-        elif (user_option == 'save' or user_option == 's'):
-            save_state((infection_deck, discard_pile, unique_cards), "manual_save.pkl")
-        elif (user_option.startswith('load') or user_option.startswith('l ')):
-            l = user_option.split(" ")
-            if (len(l) == 1):
-                infection_deck, discard_pile, unique_cards = load_state("manual_save.pkl")
-                print_decks()
-            elif(len(l) == 2):
-                if (l[1] == 'manual'):
-                    infection_deck, discard_pile, unique_cards = load_state("manual_save.pkl")
-                    print_decks()
-                elif (l[1] == 'auto'):
-                    infection_deck, discard_pile, unique_cards = load_state("auto_save.pkl")
-                    print_decks()
-                else:
-                    print("usage: load|l [manual|auto]")
+    def save(self, file_name: str) -> None:
+        with open(file_name, "w") as file:
+            json.dump(
+                {
+                    "infection": self.infection_deck,
+                    "discard": self.discard_pile,
+                    "card_to_color": self.card_to_color,
+                },
+                file,
+                indent=4,
+            )
+
+    def _print_formatting(self, lis: [str]) -> [str]:
+        card_counts = {}
+        reprs = []
+        for card in lis:
+            card_counts[card] = card_counts.get(card, 0) + 1
+            # Sort by count, then name.
+            card_tuples = [(v, k) for k, v in card_counts.items()]
+            card_tuples.sort(key=cmp_to_key(self.compare))
+            reprs = []
+            for count, card in card_tuples:
+                name = f"x{count} " + self._format_name(card)
+                reprs.append(name)
+        return reprs
+
+    def print(self) -> None:
+        print("Infection decks (topmost first):")
+        for i, deck in enumerate(self.infection_deck):
+            if len(deck) == 0:
+                continue
+
+            deck_names = self._print_formatting(deck)
+            print(f"deck {i+1}: {len(deck)}")
+            for name in deck_names:
+                print(f"\t{name}")
+
+        discards = self._print_formatting(self.discard_pile)
+        print(f"\nDiscard: {len(self.discard_pile)}")
+        for name in discards:
+            print(f"\t{name}")
+
+    def compare(self, item1, item2):
+        count1 = item1[0]
+        count2 = item2[0]
+
+        if count1 > count2:
+            return -1
+
+        elif count2 > count1:
+            return 1
+        else:
+            name1 = item1[1]
+            name2 = item2[1]
+            if name1 > name2:
+                return 1
+            elif name2 > name1:
+                return -1
             else:
-                print("usage: load|l manual|auto")
-        elif (user_option == 'print' or user_option == 'p'):
-            save_state((infection_deck, discard_pile, unique_cards), "auto_save.pkl")
-            print_decks()
-        elif (user_option.startswith('add_card') or user_option.startswith('ac')):
-            l = user_option.split(" ")
-            if (len(l) == 3):
-                c = l[2].replace('_', ' ')
-                c = c.strip()
-                c = c.lower()
-                if (l[1].isdecimal):
-                    i = int(l[1])
-                    if (len(infection_deck) > i):
-                        unique_cards.add(c)
-                        infection_deck[i].append(c)
-                        infection_deck[i].sort()
-                        save_state((infection_deck, discard_pile, unique_cards), "auto_save.pkl")
-                        print_decks()
-                    else:
-                        print("that sub-deck doesn't exist")
-                else:
-                    print("NaN index")
-            else:
-                print("usage: add_card|ac \d+ card_name")
-        elif (user_option.startswith('draw_card') or user_option.startswith('dc')):
-            l = user_option.split(" ")
-            if (len(l) >= 2):
-                for c in l[1:]:
-                    c = c.replace('_', ' ')
-                    c = c.strip()
-                    c = c.lower()
-                    if (c in unique_cards):
-                        if (c in infection_deck[0]):
-                            infection_deck[0].remove(c)
-                            if (not infection_deck[0]):
-                                infection_deck.pop(0)
-                            discard_pile.append(c)
-                            discard_pile.sort()
-                            save_state((infection_deck, discard_pile, unique_cards), "auto_save.pkl")
-                            print_decks()
-                        else:
-                            print("card not in infection deck", c)
-                    else:
-                        print("card doesn't exist", c)
-            else:
-                print("usage: draw_card|dc card_name")
-        elif(user_option.startswith('shuffle') or user_option.startswith('sh')):
-            if (len(discard_pile) > 0):
-                infection_deck.insert(0, discard_pile)
-                discard_pile = []
-                save_state((infection_deck, discard_pile, unique_cards), "auto_save.pkl")
-                print_decks()
-        elif (user_option.startswith('remove_card') or user_option.startswith('rc')):
-            l = user_option.split(" ")
-            if (len(l) == 3):
-                c = l[2].replace('_', ' ')
-                c = c.strip()
-                c = c.lower()
-                if (l[1].isdecimal):
-                    i = int(l[1])
-                    if (len(infection_deck) > i):
-                        infection_deck[i].remove(c)
-                        save_state((infection_deck, discard_pile, unique_cards), "auto_save.pkl")
-                        print_decks()
-                    else:
-                        print("that sub-deck doesn't exist")
-                else:
-                    print("NaN index")
-            else:
-                print("usage: remove_card|rc \d+ card_name")
+                return 0
 
-def main():
-    start_deck = load_deck("infection_deck.txt")
-    infection_deck.append(start_deck)
-    unique_cards.update(infection_deck[-1])
-    
-    infection_deck[0].sort()
-    print_decks()
-    mainloop()
+    def _format_name(self, card: str) -> str:
+        if card in self.card_to_color:
+            return colored(card, on_color=f"on_{self.card_to_color[card]}")
+        return card
+
+    def draw(self, card: str) -> None:
+        if card in self.infection_deck[0]:
+            self.infection_deck[0].remove(card)
+            if not self.infection_deck[0]:
+                self.infection_deck.pop(0)
+        self.discard_pile.append(card)
+        self.discard_pile.sort()
+
+    def reshuffle_discard(self) -> None:
+        if len(self.discard_pile) > 0:
+            self.infection_deck.insert(0, list(self.discard_pile))
+            self.discard_pile = []
+
+    def remove_discard(self, card: str) -> None:
+        if card in self.discard_pile:
+            self.discard_pile.remove(card)
+
+    def mark_card(self, card: str, color: str) -> None:
+        self.card_to_color[card] = color
+
+    def unmark_card(self, card: str) -> None:
+        del self.card_to_color[card]
+
+
+class AliasedGroup(click.Group):
+    def get_command(self, ctx, cmd_name):
+        shorthands = {
+            "p": "print",
+            "dc": "draw_card",
+            "rd": "remove_discard",
+        }
+        if cmd_name in shorthands:
+            cmd_name = shorthands[cmd_name]
+        return click.Group.get_command(self, ctx, cmd_name)
+
+
+@click.command(cls=AliasedGroup)
+def cli():
+    # This is the root command.
+    pass
+
+
+class CardNameType(click.ParamType):
+    name = "cards"
+
+    def shell_complete(self, ctx, param, incomplete):
+        # Implements shell completion for cities.
+        # Requires a recent version of bash and adding the following to your .bashrc:
+        # $ eval "$(_PANDEMIC_HELPER_COMPLETE=bash_source pandemic_helper)"
+        try:
+            with open("cards.txt") as f:
+                cities = [c.strip() for c in f.readlines() if len(c) > 0]
+        except FileNotFoundError:
+            cities = []
+        return [
+            CompletionItem(name.lower().replace(" ", "_"))
+            for name in cities
+            if name.lower().replace(" ", "_").startswith(incomplete)
+        ]
+
+
+@cli.command("print")
+def _print() -> None:
+    decks = Decks.load(STATE_FILE_NAME)
+    decks.print()
+
+
+@cli.command("draw_card")
+@click.argument("cards", type=CardNameType(), nargs=-1)
+def draw_card(cards: [str]) -> None:
+    decks = Decks.load(STATE_FILE_NAME)
+    for card in cards:
+        card = card.replace("_", " ").strip().lower()
+        decks.draw(card)
+    decks.save(STATE_FILE_NAME)
+    decks.print()
+
+
+@cli.command("remove_discard")
+@click.argument("cards", type=CardNameType(), nargs=-1)
+def remove_discard(cards: list[str]) -> None:
+    decks = Decks.load(STATE_FILE_NAME)
+    for card in cards:
+        card = card.replace("_", " ").strip().lower()
+        decks.remove_discard(card)
+    decks.save(STATE_FILE_NAME)
+    decks.print()
+
+
+@cli.command()
+def shuffle() -> None:
+    decks = Decks.load(STATE_FILE_NAME)
+    decks.reshuffle_discard()
+    decks.save(STATE_FILE_NAME)
+    decks.print()
+
+
+@cli.command()
+@click.option("--color", "-c", required=True, help="red|yellow|none")
+@click.argument("cards", type=CardNameType(), nargs=-1)
+def mark(color: str, cards: list[str]) -> None:
+    decks = Decks.load(STATE_FILE_NAME)
+    for card in cards:
+        card = card.replace("_", " ").strip().lower()
+        if color.lower() == "none":
+            decks.unmark_card(card)
+        else:
+            decks.mark_card(card, color)
+    decks.save(STATE_FILE_NAME)
+    decks.print()
+
+
+@cli.command()
+def save() -> None:
+    decks = Decks.load(STATE_FILE_NAME)
+    decks.save(SAVE_FILE_NAME)
+    decks.print()
+
+
+@cli.command()
+def load() -> None:
+    decks = Decks.load(SAVE_FILE_NAME)
+    decks.save(STATE_FILE_NAME)
+    decks.print()
+
+
+def main() -> None:
+    cli()
 
 
 if __name__ == "__main__":
