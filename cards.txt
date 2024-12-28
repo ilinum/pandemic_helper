@@ -5,11 +5,13 @@ Bogota
 Buenos Aires
 Cairo
 Chicago
-Dar El Salam
+Dar Es Salam
 Delhi
 Denver
 Frankfurt
+Hong Kong
 Istanbul
+Jakarta
 Jacksonville
 Johannesburg
 Khartoum
@@ -28,7 +30,11 @@ Riyadh
 San Francisco
 Santiago
 Sao Paulo
+Shanghai
+Seoul
 St Petersburg
 Tehran
 Tripoli
+Utopia
 Washington
+Wellington
