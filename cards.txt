@@ -1,19 +1,21 @@
-Antananarivo
+Algiers
 Atlanta
 Baghdad
+Bangkok
+Beijing
 Bogota
 Buenos Aires
 Cairo
+Chennai
 Chicago
-Dar Es Salam
 Delhi
-Denver
-Frankfurt
+Essen
+Ho Chi Minh City
 Hong Kong
 Istanbul
 Jakarta
-Jacksonville
 Johannesburg
+Karachi
 Khartoum
 Kinshasa
 Kolkata
@@ -21,20 +23,26 @@ Lagos
 Lima
 London
 Los Angeles
+Madrid
+Manila
 Mexico City
+Miami
+Milan
+Montreal
 Moscow
-New Mumbai
+Mumbai
 New York
+Osaka
 Paris
 Riyadh
 San Francisco
 Santiago
 Sao Paulo
-Shanghai
 Seoul
+Shanghai
 St Petersburg
+Sydney
+Taipei
 Tehran
-Tripoli
-Utopia
+Tokyo
 Washington
-Wellington
